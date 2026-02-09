@@ -1,8 +1,0 @@
-{
-  "name": "Gerenciador de Dívidas Pro",
-  "description": "Um painel avançado para controle de cobranças, monitoramento de dívidas em atraso e gestão de pagamentos recorrentes com foco em ação rápida.",
-  "requestFramePermissions": [
-    "camera",
-    "microphone"
-  ]
-}
