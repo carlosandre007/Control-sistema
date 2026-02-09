@@ -92,7 +92,7 @@ export const registerPayment = async (
             .update({
                 due_date: nextDueDate,
                 // Mantém o status como PENDING ou calcula novo status baseado na data
-                status: calculateDebtStatus(nextDueDate, debt.amount)
+                status: calculateDebtStatus(nextDueDate, debt.status)
             })
             .eq('id', debt.id);
         if (debtError) throw debtError;
