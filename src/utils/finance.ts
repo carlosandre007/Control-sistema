@@ -23,18 +23,13 @@ export const calculateInterest = (debt: Debt): number => {
 export const handleRecurrence = async (debt: Debt, userId: string) => {
     const nextDueDate = getNextMonthDate(debt.dueDate);
 
-    const { data: originalDebt } = await supabase
-        .from('debts')
-        .select('amount')
-        .eq('id', debt.id)
-        .single();
-
     const nextDebt = {
         user_id: userId,
         customer_name: debt.customerName,
         customer_code: debt.customerCode,
-        amount: debt.amount || 0, // Using latest amount as base for next cycle
-        registration_date: formatDateToISO(new Date()),
+        amount: debt.amount || 0,
+        original_amount: debt.originalAmount || debt.amount || 0,
+        registration_date: debt.registrationDate, // Mantém a DATA FIXA original
         due_date: nextDueDate,
         status: DebtStatus.PENDING,
         is_recurring: true,
@@ -67,7 +62,7 @@ export const registerPayment = async (
         type: type === 'total' ? 'total_payment' : 'interest_payment',
         amount: amount,
         transaction_date: formatDateToISO(new Date()),
-        description: type === 'total' ? 'Pagamento Total' : 'Pagamento de Juros',
+        description: type === 'total' ? 'PAGAMENTO TOTAL' : 'PAGAMENTO DE JUROS',
     };
 
     const { error: txError } = await supabase.from('transactions').insert([transactionPayload]);
@@ -80,7 +75,7 @@ export const registerPayment = async (
             .update({
                 status: DebtStatus.PAID,
                 payment_date: new Date().toISOString(),
-                amount: 0 // Zero principal on total payment
+                // Keep the amount for record, just change status to PAID
             })
             .eq('id', debt.id);
         if (debtError) throw debtError;
@@ -91,8 +86,7 @@ export const registerPayment = async (
             .from('debts')
             .update({
                 due_date: nextDueDate,
-                // Mantém o status como PENDING ou calcula novo status baseado na data
-                status: calculateDebtStatus(nextDueDate, debt.status)
+                status: DebtStatus.PENDING // Mantém EM ABERTO
             })
             .eq('id', debt.id);
         if (debtError) throw debtError;

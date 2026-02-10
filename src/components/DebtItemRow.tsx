@@ -54,9 +54,13 @@ const DebtItemRow: React.FC<DebtItemRowProps> = ({ debt, onPay, onDelete, onPayI
                 <div className="flex flex-col">
                     <div className="flex items-center gap-2">
                         <span className="text-[10px] font-mono text-gray-400">#{debt.sequenceNumber?.toString().padStart(4, '0')}</span>
-                        <span className="text-[10px] text-gray-500 dark:text-gray-400 font-bold uppercase">Vencimento: {debt.dueDate ? new Date(debt.dueDate).toLocaleDateString('pt-BR') : '-'}</span>
+                        <span className="text-[10px] text-gray-500 dark:text-gray-400 font-bold uppercase">Cadastrada em: {debt.registrationDate ? new Date(debt.registrationDate).toLocaleDateString('pt-BR') : '-'} (FIXA)</span>
                     </div>
-                    <span className="text-base font-bold text-gray-900 dark:text-white mt-0.5">R$ {debt.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                    <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-tight line-clamp-1">{debt.customerName}</span>
+                    <div className="flex items-end gap-3 mt-0.5">
+                        <span className="text-base font-bold text-gray-900 dark:text-white">R$ {debt.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} <span className="text-[10px] font-normal text-gray-400">Atual</span></span>
+                        <span className="text-xs text-gray-400 line-through mb-0.5">R$ {(debt.originalAmount || debt.amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })} <span className="text-[8px] no-underline">Original</span></span>
+                    </div>
                     <div className="flex flex-wrap items-center gap-2 mt-1">
                         {debt.isRecurring && (
                             <span className="text-[9px] font-bold text-primary flex items-center gap-0.5">
@@ -74,12 +78,16 @@ const DebtItemRow: React.FC<DebtItemRowProps> = ({ debt, onPay, onDelete, onPayI
                                 </span>
                             )
                         )}
+                        <span className="text-[10px] text-gray-500 dark:text-gray-400 font-bold uppercase flex items-center gap-1">
+                            <span className="material-symbols-outlined text-xs">calendar_today</span>
+                            Vence: {debt.dueDate ? new Date(debt.dueDate).toLocaleDateString('pt-BR') : '-'}
+                        </span>
                         <span className={`text-[9px] font-black uppercase ${isPaid ? 'text-success' :
                             debt.status === DebtStatus.UP_TO_DATE ? 'text-green-500' :
                                 isOverdue ? 'text-danger' : 'text-warning'
                             }`}>
                             {isPaid ? 'Título Pago' :
-                                debt.status === DebtStatus.UP_TO_DATE ? 'Em Dia' :
+                                debt.status === DebtStatus.UP_TO_DATE ? 'Em Aberto' :
                                     isOverdue ? 'Atrasado' : 'A Vencer'}
                         </span>
                         {interest > 0 && !isPaid && (

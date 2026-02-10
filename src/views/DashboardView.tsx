@@ -60,18 +60,18 @@ const DashboardView: React.FC<DashboardViewProps> = ({
             {/* Top KPIs Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 <StatCard
+                    title="Total em Aberto (Geral)"
+                    value={`R$ ${debts.filter(d => d.status !== 'PAID').reduce((sum, d) => sum + d.amount, 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
+                    icon="Target"
+                    footer="Soma de todos os títulos vigentes"
+                    color="primary"
+                />
+                <StatCard
                     title="Recebido no Mês"
                     value={`R$ ${stats.receivedThisMonth.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
                     icon="DollarSign"
                     footer="Pagamentos totais e de juros"
                     color="success"
-                />
-                <StatCard
-                    title="A Receber (Previsão)"
-                    value={`R$ ${stats.toReceive.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
-                    icon="Calendar"
-                    footer="Títulos ativos do mês"
-                    color="warning"
                 />
                 <StatCard
                     title="Vencidos (Crítico)"
@@ -81,10 +81,10 @@ const DashboardView: React.FC<DashboardViewProps> = ({
                     color="danger"
                 />
                 <StatCard
-                    title="Juros Recebidos"
-                    value={`R$ ${stats.interestReceived.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
+                    title="Total Quitadas"
+                    value={`R$ ${debts.filter(d => d.status === 'PAID').reduce((sum, d) => sum + d.amount, 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
                     icon="TrendingUp"
-                    footer="Apenas pagamentos de juros"
+                    footer="Histórico de dívidas liquidadas"
                     color="info"
                 />
             </div>

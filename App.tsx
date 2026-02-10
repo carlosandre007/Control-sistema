@@ -22,6 +22,7 @@ import { formatDateToISO } from './src/utils/date';
 import AuthView from './src/views/AuthView';
 import TransactionsView from './src/views/TransactionsView';
 import ActiveDebtsView from './src/views/ActiveDebtsView';
+import CustomerPanelView from './src/views/CustomerPanelView';
 import BackupView from './src/views/BackupView';
 import { Session } from '@supabase/supabase-js';
 import { registerPayment } from './src/utils/finance';
@@ -34,6 +35,8 @@ const App: React.FC = () => {
   const [annualTransactions, setAnnualTransactions] = useState<Transaction[]>([]); // For timeline chart
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [showCustomerPanel, setShowCustomerPanel] = useState(false);
+  const [selectedCustomerCodeForPanel, setSelectedCustomerCodeForPanel] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [editingDebt, setEditingDebt] = useState<Debt | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -85,10 +88,12 @@ const App: React.FC = () => {
       setDebts(data.map((d: any) => ({
         id: d.id,
         sequenceNumber: d.sequence_number,
-        customerName: d.customer_name || 'Cliente sem Nome',
+        customerName: d.customer_name || 'Credor sem Nome',
         customerCode: d.customer_code || '',
+        customerDocument: d.customer_document || '',
         whatsapp: d.whatsapp || '',
         amount: Number(d.amount || 0),
+        originalAmount: Number(d.original_amount || d.amount || 0),
         dueDate: d.due_date || '',
         registrationDate: d.registration_date,
         interestRate: Number(d.interest_rate || 0.30),
@@ -239,11 +244,13 @@ const App: React.FC = () => {
     const totalAmount = debt.amount + interest;
 
     const paidAmountStr = prompt(
-      `Confirme o valor pago:\n\n` +
+      `REGISTRO DE RECEBIMENTO TOTAL\n\n` +
+      `Dívida: ${debt.customerName}\n` +
       `Valor Principal: R$ ${debt.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}\n` +
-      `Juros: R$ ${interest.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}\n` +
-      `Total: R$ ${totalAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}\n\n` +
-      `Para pagamento TOTAL, digite o valor cheio.`
+      `Juros Registrados: R$ ${interest.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}\n` +
+      `Total Esperado: R$ ${totalAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}\n\n` +
+      `CONFIRME O VALOR REAL RECEBIDO:`,
+      totalAmount.toFixed(2).replace('.', ',')
     );
 
     if (!paidAmountStr) return;
@@ -320,14 +327,28 @@ const App: React.FC = () => {
       return;
     }
 
-    if (!confirm(`Confirma o pagamento de R$ ${interest.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} em juros?\n\nA dívida principal de R$ ${debt.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} será mantida.`)) {
+    const paidAmountStr = prompt(
+      `REGISTRO DE RECEBIMENTO DE JUROS\n\n` +
+      `Dívida: ${debt.customerName}\n` +
+      `Valor Principal: R$ ${debt.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}\n` +
+      `Juros Registrados: R$ ${interest.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}\n\n` +
+      `CONFIRME O VALOR REAL RECEBIDO (Juros):`,
+      interest.toFixed(2).replace('.', ',')
+    );
+
+    if (!paidAmountStr) return;
+
+    const paidAmount = parseFloat(paidAmountStr.replace(',', '.'));
+
+    if (isNaN(paidAmount) || paidAmount <= 0) {
+      alert('Valor inválido!');
       return;
     }
 
     setIsSaving(true);
     try {
-      await registerPayment(debt, 'interest', interest, session.user.id);
-      alert(`Juros de R$ ${interest.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} pagos com sucesso!`);
+      await registerPayment(debt, 'interest', paidAmount, session.user.id);
+      alert(`Juros de R$ ${paidAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} registrados com sucesso!`);
       fetchDebts();
       fetchAnnualStats();
     } catch (error: any) {
@@ -739,6 +760,10 @@ const App: React.FC = () => {
               onDeleteClient={handleDeleteClient}
               onBackupExport={handleBackupExport}
               onEditClient={handleEditClient}
+              onOpenPanel={(code) => {
+                setSelectedCustomerCodeForPanel(code);
+                setShowCustomerPanel(true);
+              }}
             />
           )}
 
@@ -761,6 +786,19 @@ const App: React.FC = () => {
         <WhatsAppMessageModal
           debt={debtForWhatsApp}
           onClose={() => { setShowWhatsAppModal(false); setDebtForWhatsApp(null); }}
+        />
+      )}
+
+      {showCustomerPanel && selectedCustomerCodeForPanel && (
+        <CustomerPanelView
+          customerCode={selectedCustomerCodeForPanel}
+          debts={debts}
+          transactions={annualTransactions}
+          onClose={() => setShowCustomerPanel(false)}
+          onPay={handlePay}
+          onEdit={handleEdit}
+          onPayInterest={handlePayInterest}
+          onWhatsApp={handleWhatsAppClick}
         />
       )}
       <SpeedInsights />

@@ -33,22 +33,19 @@ const ActiveDebtsView: React.FC<ActiveDebtsViewProps> = ({
 }) => {
     const [searchTerm, setSearchTerm] = useState('');
 
-    // 1. Filter only ACTIVE debts (PENDING, UP_TO_DATE, OVERDUE, PARTIAL)
-    // AND respect the selected month/year
+    // 1. Filter ACTIVE debts (PENDING, UP_TO_DATE, OVERDUE)
     const activeDebts = debts.filter(d => {
         if (d.status === DebtStatus.PAID) return false;
-        if (!d.dueDate) return false;
 
-        const [year, month] = d.dueDate.split('-').map(Number);
-        const isSelectedPeriod = (month - 1) === selectedMonth && year === selectedYear;
-        const overdue = isOverdue(d.dueDate);
+        return d.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (d.description && d.description.toLowerCase().includes(searchTerm.toLowerCase()));
+    });
 
-        // Show if it's in the current selected period OR if it's overdue (regardless of period)
-        const isVisible = isSelectedPeriod || overdue;
-
-        return isVisible &&
-            (d.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                (d.description && d.description.toLowerCase().includes(searchTerm.toLowerCase())));
+    // 2. Filter PAID debts
+    const paidDebts = debts.filter(d => {
+        if (d.status !== DebtStatus.PAID) return false;
+        return d.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (d.description && d.description.toLowerCase().includes(searchTerm.toLowerCase()));
     });
 
     // 2. Sort by Due Date (soonest first)
@@ -74,9 +71,9 @@ const ActiveDebtsView: React.FC<ActiveDebtsViewProps> = ({
                 </div>
                 <div className="flex items-center gap-3 bg-gray-50 dark:bg-slate-900/50 p-2 rounded-2xl border border-gray-100 dark:border-slate-700">
                     <div className="px-4 py-2 text-center">
-                        <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Total em Aberto</div>
+                        <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Total Geral em Aberto</div>
                         <div className="text-lg font-black text-gray-900 dark:text-white">
-                            {activeDebts.length} <span className="text-xs font-normal text-gray-400">títulos</span>
+                            R$ {activeDebts.reduce((sum, d) => sum + d.amount, 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                         </div>
                     </div>
                 </div>
@@ -100,14 +97,15 @@ const ActiveDebtsView: React.FC<ActiveDebtsViewProps> = ({
                 </div>
             </div>
 
-            {/* Debts List */}
+            {/* Active Debts List */}
             <div className="space-y-3">
-                {sortedDebts.length === 0 ? (
+                <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-2">Dívidas em Aberto</h3>
+                {activeDebts.length === 0 ? (
                     <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-2xl border border-dashed border-gray-200 dark:border-gray-700">
                         <p className="text-gray-500">Nenhum débito vigente encontrado.</p>
                     </div>
                 ) : (
-                    sortedDebts.map(debt => (
+                    activeDebts.sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()).map(debt => (
                         <DebtItemRow
                             key={debt.id}
                             debt={debt}
@@ -121,6 +119,25 @@ const ActiveDebtsView: React.FC<ActiveDebtsViewProps> = ({
                     ))
                 )}
             </div>
+
+            {/* Paid Debts List */}
+            {paidDebts.length > 0 && (
+                <div className="mt-12 space-y-3">
+                    <h3 className="text-sm font-bold text-green-600 dark:text-green-500 uppercase tracking-wider mb-2">Dívidas Quitadas</h3>
+                    {paidDebts.map(debt => (
+                        <DebtItemRow
+                            key={debt.id}
+                            debt={debt}
+                            onPay={onPay}
+                            onEdit={onEdit}
+                            onDelete={onDelete}
+                            onPayInterest={onPayInterest}
+                            onWhatsAppClick={onWhatsApp}
+                            isSaving={isSaving}
+                        />
+                    ))}
+                </div>
+            )}
         </div>
     );
 };

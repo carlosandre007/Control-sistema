@@ -12,6 +12,7 @@ interface ClientsViewProps {
     onDeleteClient: (customerCode: string) => void;
     onBackupExport: () => void;
     onEditClient: (customerCode: string) => void;
+    onOpenPanel: (customerCode: string) => void;
 }
 
 const ClientsView: React.FC<ClientsViewProps> = ({
@@ -23,7 +24,8 @@ const ClientsView: React.FC<ClientsViewProps> = ({
     onNewDebt,
     onDeleteClient,
     onBackupExport,
-    onEditClient
+    onEditClient,
+    onOpenPanel
 }) => {
     // Sort clients alphabetically by name
     const sortedGroupedDebts = React.useMemo(() => {
@@ -104,7 +106,12 @@ const ClientsView: React.FC<ClientsViewProps> = ({
                                                 <div className={`w-8 h-8 rounded-full ${customerDebts[0].avatarColor || 'bg-primary'} flex items-center justify-center text-white font-bold text-xs`}>
                                                     {customerDebts[0].customerName.charAt(0).toUpperCase()}
                                                 </div>
-                                                <span className="font-bold text-gray-900 dark:text-white">{customerDebts[0].customerName}</span>
+                                                <button
+                                                    onClick={() => onOpenPanel(code)}
+                                                    className="font-bold text-gray-900 dark:text-white hover:text-primary transition-colors text-left"
+                                                >
+                                                    {customerDebts[0].customerName}
+                                                </button>
                                             </div>
                                         </td>
                                         <td className="px-8 py-5">

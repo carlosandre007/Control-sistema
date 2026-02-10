@@ -8,16 +8,18 @@ export enum DebtStatus {
 export interface Debt {
   id: string;
   sequenceNumber?: number;
-  customerName: string;
+  customerName: string; // Credor / Banco / Cartão
   customerCode: string;
+  customerDocument?: string; // CPF / CNPJ
   whatsapp?: string;
-  amount: number;
-  dueDate: string;
-  registrationDate?: string;
-  paymentDate?: string;
+  amount: number; // Valor Atual
+  originalAmount: number; // Valor Original
+  dueDate: string; // Data de Vencimento
+  registrationDate: string; // DATA DA DÍVIDA (FIXA)
+  paymentDate?: string; // Data do pagamento final
   interestRate?: number;
   interestAmount?: number;
-  status: DebtStatus;
+  status: DebtStatus; // EM ABERTO / QUITADA
   isRecurring: boolean;
   avatarColor: string;
   category?: string;

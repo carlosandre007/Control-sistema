@@ -14,6 +14,7 @@ interface DebtFormModalProps {
 interface ClientSuggestion {
     customer_name: string;
     customer_code: string;
+    customer_document?: string;
     whatsapp?: string;
     avatar_color: string;
 }
@@ -29,8 +30,10 @@ const DebtFormModal: React.FC<DebtFormModalProps> = ({ onClose, onSuccess, userI
     const [formData, setFormData] = useState({
         customer_name: '',
         customer_code: '',
+        customer_document: '',
         whatsapp: '',
         amount: '',
+        original_amount: '',
         registration_date: formatDateToISO(new Date()),
         due_date: getNextMonthDate(formatDateToISO(new Date())),
         status: DebtStatus.UP_TO_DATE,
@@ -46,16 +49,22 @@ const DebtFormModal: React.FC<DebtFormModalProps> = ({ onClose, onSuccess, userI
         const fetchClients = async () => {
             const { data, error } = await supabase
                 .from('debts')
-                .select('customer_name, customer_code, whatsapp, avatar_color')
+                .select('customer_name, customer_code, customer_document, whatsapp, avatar_color')
                 .eq('user_id', userId);
 
             if (data && !error) {
                 const uniqueClientsMap = new Map<string, ClientSuggestion>();
                 data.forEach(d => {
-                    if (!uniqueClientsMap.has(d.customer_code)) {
+                    const existing = uniqueClientsMap.get(d.customer_code);
+                    // Prioritize records that have more information
+                    const score = (d.whatsapp ? 2 : 0) + (d.customer_document ? 1 : 0);
+                    const existingScore = existing ? ((existing.whatsapp ? 2 : 0) + (existing.customer_document ? 1 : 0)) : -1;
+
+                    if (!existing || score > existingScore) {
                         uniqueClientsMap.set(d.customer_code, {
                             customer_name: d.customer_name,
                             customer_code: d.customer_code,
+                            customer_document: d.customer_document,
                             whatsapp: d.whatsapp,
                             avatar_color: d.avatar_color
                         });
@@ -72,8 +81,10 @@ const DebtFormModal: React.FC<DebtFormModalProps> = ({ onClose, onSuccess, userI
             setFormData({
                 customer_name: editingDebt.customerName,
                 customer_code: editingDebt.customerCode,
+                customer_document: editingDebt.customerDocument || '',
                 whatsapp: editingDebt.whatsapp || '',
                 amount: editingDebt.amount.toString(),
+                original_amount: (editingDebt.originalAmount || editingDebt.amount).toString(),
                 registration_date: editingDebt.registrationDate || formatDateToISO(new Date()),
                 due_date: editingDebt.dueDate,
                 status: editingDebt.status,
@@ -140,7 +151,7 @@ const DebtFormModal: React.FC<DebtFormModalProps> = ({ onClose, onSuccess, userI
             // If that fails (migration not run), fall back to 'debts' table
             let { data, error } = await supabase
                 .from('clients')
-                .select('name, customer_code, whatsapp, avatar_color')
+                .select('name, customer_code, customer_document, whatsapp, avatar_color')
                 .ilike('name', `%${query}%`)
                 .limit(5);
 
@@ -148,29 +159,35 @@ const DebtFormModal: React.FC<DebtFormModalProps> = ({ onClose, onSuccess, userI
                 // Fallback to debts
                 const { data: debtsData, error: debtsError } = await supabase
                     .from('debts')
-                    .select('customer_name, customer_code, whatsapp, avatar_color')
+                    .select('customer_name, customer_code, customer_document, whatsapp, avatar_color')
                     .ilike('customer_name', `%${query}%`)
                     .limit(20);
 
                 if (debtsError) throw debtsError;
 
-                // Uniquify by customer_code
-                const unique = new Map();
+                // Uniquify by customer_code, prioritizing populated fields
+                const unique = new Map<string, ClientSuggestion>();
                 (debtsData || []).forEach(d => {
-                    if (!unique.has(d.customer_code)) {
+                    const existing = unique.get(d.customer_code);
+                    const score = (d.whatsapp ? 2 : 0) + (d.customer_document ? 1 : 0);
+                    const existingScore = existing ? ((existing.whatsapp ? 2 : 0) + (existing.customer_document ? 1 : 0)) : -1;
+
+                    if (!existing || score > existingScore) {
                         unique.set(d.customer_code, {
                             customer_name: d.customer_name,
                             customer_code: d.customer_code,
+                            customer_document: d.customer_document,
                             whatsapp: d.whatsapp,
                             avatar_color: d.avatar_color
                         });
                     }
                 });
-                setFilteredClients(Array.from(unique.values()) as ClientSuggestion[]);
+                setFilteredClients(Array.from(unique.values()));
             } else {
                 setFilteredClients((data || []).map(c => ({
                     customer_name: c.name,
                     customer_code: c.customer_code,
+                    customer_document: c.customer_document,
                     whatsapp: c.whatsapp,
                     avatar_color: c.avatar_color
                 })));
@@ -184,9 +201,9 @@ const DebtFormModal: React.FC<DebtFormModalProps> = ({ onClose, onSuccess, userI
     const handleCustomerNameChange = (value: string) => {
         setFormData(prev => ({ ...prev, customer_name: value }));
 
-        // Exact match check for auto-fill (non-debounced for instant feel if known)
+        // Instant match check from local cached clients
         if (!isWhatsappManual && value.length > 2) {
-            const exactMatch = filteredClients.find(
+            const exactMatch = existingClients.find(
                 client => client.customer_name.toLowerCase() === value.trim().toLowerCase()
             );
 
@@ -194,10 +211,12 @@ const DebtFormModal: React.FC<DebtFormModalProps> = ({ onClose, onSuccess, userI
                 setFormData(prev => ({
                     ...prev,
                     whatsapp: exactMatch.whatsapp || '',
+                    customer_document: exactMatch.customer_document || prev.customer_document,
                     customer_code: exactMatch.customer_code,
                     avatar_color: exactMatch.avatar_color
                 }));
                 setShowWhatsappHint(!exactMatch.whatsapp);
+                setIsWhatsappManual(false);
             }
         }
     };
@@ -207,6 +226,7 @@ const DebtFormModal: React.FC<DebtFormModalProps> = ({ onClose, onSuccess, userI
             ...formData,
             customer_name: client.customer_name,
             customer_code: client.customer_code,
+            customer_document: client.customer_document || formData.customer_document,
             whatsapp: client.whatsapp || '',
             avatar_color: client.avatar_color
         });
@@ -231,8 +251,10 @@ const DebtFormModal: React.FC<DebtFormModalProps> = ({ onClose, onSuccess, userI
             const payload = {
                 customer_name: formData.customer_name,
                 customer_code: formData.customer_code,
+                customer_document: formData.customer_document,
                 whatsapp: formData.whatsapp,
                 amount: parseFloat(formData.amount),
+                original_amount: parseFloat(formData.original_amount || formData.amount),
                 registration_date: formData.registration_date,
                 due_date: formData.due_date,
                 status: formData.status,
@@ -301,16 +323,16 @@ const DebtFormModal: React.FC<DebtFormModalProps> = ({ onClose, onSuccess, userI
 
                 <div className="px-8 pb-4">
                     <h2 className="text-3xl font-bold text-gray-900 dark:text-white">Cadastro de Dívida</h2>
-                    <p className="text-sm text-gray-400 mt-1">Preencha os dados abaixo para registrar uma nova pendência financeira.</p>
+                    <p className="text-sm text-gray-400 mt-1">Preencha os dados abaixo para registrar uma nova dívida com DATA FIXA.</p>
                 </div>
 
                 <form onSubmit={handleSubmit} className="px-8 pb-8 space-y-8">
                     {/* Section 1: Client Information */}
                     <div className="space-y-4">
-                        <h3 className="text-base font-bold text-gray-900 dark:text-white pb-2 border-b border-gray-100 dark:border-slate-700">Informações do Cliente</h3>
+                        <h3 className="text-base font-bold text-gray-900 dark:text-white pb-2 border-b border-gray-100 dark:border-slate-700">Informações da Dívida</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-1.5">
-                                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300">Nome do Cliente</label>
+                                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300">Credor / Banco / Cartão</label>
                                 <div className="relative group">
                                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-primary transition-colors">
                                         <span className="material-symbols-outlined text-lg">person</span>
@@ -322,7 +344,7 @@ const DebtFormModal: React.FC<DebtFormModalProps> = ({ onClose, onSuccess, userI
                                         value={formData.customer_name}
                                         onChange={e => handleCustomerNameChange(e.target.value)}
                                         onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-                                        placeholder="Ex: João Silva"
+                                        placeholder="Ex: Banco do Brasil, Visa..."
                                         autoComplete="off"
                                     />
                                     {showSuggestions && filteredClients.length > 0 && (
@@ -348,6 +370,21 @@ const DebtFormModal: React.FC<DebtFormModalProps> = ({ onClose, onSuccess, userI
                                 </div>
                             </div>
                             <div className="space-y-1.5">
+                                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300">CPF / CNPJ</label>
+                                <div className="relative group">
+                                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-primary transition-colors">
+                                        <span className="material-symbols-outlined text-lg">badge</span>
+                                    </div>
+                                    <input
+                                        type="text"
+                                        className="w-full bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl pl-11 pr-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary transition-all text-gray-900 dark:text-white font-semibold"
+                                        value={formData.customer_document}
+                                        onChange={e => setFormData({ ...formData, customer_document: e.target.value })}
+                                        placeholder="000.000.000-00"
+                                    />
+                                </div>
+                            </div>
+                            <div className="space-y-1.5">
                                 <label className="block text-xs font-bold text-gray-700 dark:text-gray-300">WhatsApp</label>
                                 <div className="relative group">
                                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-green-500 transition-colors">
@@ -365,10 +402,7 @@ const DebtFormModal: React.FC<DebtFormModalProps> = ({ onClose, onSuccess, userI
                                         placeholder="(00) 00000-0000"
                                     />
                                     {showWhatsappHint && (
-                                        <div className="absolute -bottom-5 left-0 flex items-center gap-1 animate-in fade-in slide-in-from-top-1 duration-300">
-                                            <span className="material-symbols-outlined text-[10px] text-amber-500">info</span>
-                                            <span className="text-[10px] font-medium text-amber-600 dark:text-amber-400">Cliente sem WhatsApp cadastrado</span>
-                                        </div>
+                                        <p className="text-[10px] text-gray-400 mt-1 absolute -bottom-5">Cliente sem WhatsApp cadastrado</p>
                                     )}
                                 </div>
                             </div>
@@ -380,7 +414,7 @@ const DebtFormModal: React.FC<DebtFormModalProps> = ({ onClose, onSuccess, userI
                         <h3 className="text-base font-bold text-gray-900 dark:text-white pb-2 border-b border-gray-100 dark:border-slate-700">Datas e Prazos</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-1.5">
-                                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300">Data da Dívida</label>
+                                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300">DATA DA DÍVIDA (FIXA)</label>
                                 <div className="relative group">
                                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-primary transition-colors">
                                         <span className="material-symbols-outlined text-lg">calendar_today</span>
@@ -415,9 +449,9 @@ const DebtFormModal: React.FC<DebtFormModalProps> = ({ onClose, onSuccess, userI
                     {/* Section 3: Values */}
                     <div className="space-y-4">
                         <h3 className="text-base font-bold text-gray-900 dark:text-white pb-2 border-b border-gray-100 dark:border-slate-700">Valores</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div className="space-y-1.5">
-                                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300">Valor Real Total</label>
+                                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300">Valor Atual</label>
                                 <div className="relative group">
                                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-primary transition-colors">
                                         <span className="text-sm font-bold bg-gray-100 dark:bg-slate-700 px-1.5 py-0.5 rounded">R$</span>
@@ -428,24 +462,47 @@ const DebtFormModal: React.FC<DebtFormModalProps> = ({ onClose, onSuccess, userI
                                         step="0.01"
                                         className="w-full bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl pl-12 pr-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary transition-all text-gray-900 dark:text-white font-semibold"
                                         value={formData.amount}
-                                        onChange={e => setFormData({ ...formData, amount: e.target.value })}
+                                        onChange={e => {
+                                            const val = e.target.value;
+                                            setFormData(prev => ({
+                                                ...prev,
+                                                amount: val,
+                                                original_amount: prev.original_amount === '' ? val : prev.original_amount
+                                            }));
+                                        }}
                                         placeholder="0,00"
                                     />
                                 </div>
                             </div>
                             <div className="space-y-1.5">
-                                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300">Valor do Juros</label>
+                                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300">Juros (Valor)</label>
                                 <div className="relative group">
-                                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-red-500 transition-colors">
-                                        <span className="text-sm font-bold bg-red-100 dark:bg-red-900/30 text-red-500 px-1.5 py-0.5 rounded">R$</span>
+                                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-amber-500 transition-colors">
+                                        <span className="text-sm font-bold bg-gray-100 dark:bg-slate-700 px-1.5 py-0.5 rounded">R$</span>
+                                    </div>
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        className="w-full bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl pl-12 pr-4 py-3 text-sm outline-none focus:ring-2 focus:ring-amber-500/10 focus:border-amber-500 transition-all text-gray-900 dark:text-white font-semibold"
+                                        value={formData.interest_amount}
+                                        onChange={e => setFormData({ ...formData, interest_amount: e.target.value })}
+                                        placeholder="0,00"
+                                    />
+                                </div>
+                            </div>
+                            <div className="space-y-1.5">
+                                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300">Valor Original (FIXO)</label>
+                                <div className="relative group">
+                                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-primary transition-colors">
+                                        <span className="text-sm font-bold bg-gray-100 dark:bg-slate-700 px-1.5 py-0.5 rounded">R$</span>
                                     </div>
                                     <input
                                         required
                                         type="number"
                                         step="0.01"
-                                        className="w-full bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl pl-12 pr-4 py-3 text-sm outline-none focus:ring-2 focus:ring-red-500/10 focus:border-red-500 transition-all text-gray-900 dark:text-white font-semibold"
-                                        value={formData.interest_amount}
-                                        onChange={e => setFormData({ ...formData, interest_amount: e.target.value })}
+                                        className="w-full bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl pl-12 pr-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary transition-all text-gray-900 dark:text-white font-semibold"
+                                        value={formData.original_amount}
+                                        onChange={e => setFormData({ ...formData, original_amount: e.target.value })}
                                         placeholder="0,00"
                                     />
                                 </div>
