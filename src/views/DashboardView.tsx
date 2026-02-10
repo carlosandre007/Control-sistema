@@ -5,7 +5,8 @@ import DashboardChart from '../components/DashboardChart';
 import PaymentsTable from '../components/PaymentsTable';
 import UpcomingDebtsTable from '../components/UpcomingDebtsTable';
 import { DashboardStats, Debt, Transaction } from '../../types';
-import { Target, TrendingUp, Users, FileText, Info, Clock, Calendar, DollarSign, AlertTriangle } from 'lucide-react';
+import { Target, TrendingUp, Users, FileText, Info, Clock, Calendar, DollarSign, AlertTriangle, Download } from 'lucide-react';
+import { exportDebtsToPDF } from '../utils/pdfExport';
 
 interface DashboardViewProps {
     stats: DashboardStats;
@@ -150,6 +151,17 @@ const DashboardView: React.FC<DashboardViewProps> = ({
                     onClick={onViewOverdue}
                 />
             )}
+
+            {/* Export Section */}
+            <div className="flex justify-end">
+                <button
+                    onClick={() => exportDebtsToPDF(debts)}
+                    className="flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow-lg shadow-blue-500/20 transition-all transform active:scale-95"
+                >
+                    <Download size={18} />
+                    <span>Exportar Dívidas Ativas (PDF)</span>
+                </button>
+            </div>
 
             {/* Main Content Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">

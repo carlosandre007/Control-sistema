@@ -263,25 +263,9 @@ const App: React.FC = () => {
     }
 
     try {
-      if (paidAmount >= totalAmount) {
-        // Total Payment
-        await registerPayment(debt, 'total', paidAmount, session.user.id);
-        alert(`Pagamento TOTAL de R$ ${paidAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} registrado!`);
-      } else {
-        // Interest Payment recommendation if partial is attempted
-        const confirmInterest = confirm(
-          `Pagamentos parciais não são mais suportados.\n\n` +
-          `Deseja registrar este valor de R$ ${paidAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} como PAGAMENTO DE JUROS?\n\n` +
-          `Isso manterá a dívida ativa.`
-        );
-
-        if (confirmInterest) {
-          await registerPayment(debt, 'interest', paidAmount, session.user.id);
-          alert(`Pagamento de JUROS de R$ ${paidAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} registrado!`);
-        } else {
-          return;
-        }
-      }
+      // Always register as TOTAL payment when Total button is clicked
+      await registerPayment(debt, 'total', paidAmount, session.user.id);
+      alert(`Pagamento TOTAL de R$ ${paidAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} registrado com sucesso!`);
       fetchDebts();
       fetchAnnualStats();
     } catch (error: any) {

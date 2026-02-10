@@ -449,7 +449,7 @@ const DebtFormModal: React.FC<DebtFormModalProps> = ({ onClose, onSuccess, userI
                     {/* Section 3: Values */}
                     <div className="space-y-4">
                         <h3 className="text-base font-bold text-gray-900 dark:text-white pb-2 border-b border-gray-100 dark:border-slate-700">Valores</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-1.5">
                                 <label className="block text-xs font-bold text-gray-700 dark:text-gray-300">Valor Atual</label>
                                 <div className="relative group">
@@ -462,14 +462,7 @@ const DebtFormModal: React.FC<DebtFormModalProps> = ({ onClose, onSuccess, userI
                                         step="0.01"
                                         className="w-full bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl pl-12 pr-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary transition-all text-gray-900 dark:text-white font-semibold"
                                         value={formData.amount}
-                                        onChange={e => {
-                                            const val = e.target.value;
-                                            setFormData(prev => ({
-                                                ...prev,
-                                                amount: val,
-                                                original_amount: prev.original_amount === '' ? val : prev.original_amount
-                                            }));
-                                        }}
+                                        onChange={e => setFormData({ ...formData, amount: e.target.value })}
                                         placeholder="0,00"
                                     />
                                 </div>
@@ -486,23 +479,6 @@ const DebtFormModal: React.FC<DebtFormModalProps> = ({ onClose, onSuccess, userI
                                         className="w-full bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl pl-12 pr-4 py-3 text-sm outline-none focus:ring-2 focus:ring-amber-500/10 focus:border-amber-500 transition-all text-gray-900 dark:text-white font-semibold"
                                         value={formData.interest_amount}
                                         onChange={e => setFormData({ ...formData, interest_amount: e.target.value })}
-                                        placeholder="0,00"
-                                    />
-                                </div>
-                            </div>
-                            <div className="space-y-1.5">
-                                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300">Valor Original (FIXO)</label>
-                                <div className="relative group">
-                                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-primary transition-colors">
-                                        <span className="text-sm font-bold bg-gray-100 dark:bg-slate-700 px-1.5 py-0.5 rounded">R$</span>
-                                    </div>
-                                    <input
-                                        required
-                                        type="number"
-                                        step="0.01"
-                                        className="w-full bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl pl-12 pr-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/10 focus:border-primary transition-all text-gray-900 dark:text-white font-semibold"
-                                        value={formData.original_amount}
-                                        onChange={e => setFormData({ ...formData, original_amount: e.target.value })}
                                         placeholder="0,00"
                                     />
                                 </div>
