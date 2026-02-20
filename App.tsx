@@ -104,7 +104,9 @@ const App: React.FC = () => {
         avatarColor: d.avatar_color || 'bg-slate-100',
         paymentDate: d.payment_date,
         category: d.category || 'Geral',
-        description: d.description || ''
+        description: d.description || '',
+        spcDate: d.spc_date || undefined,
+        spcObservation: d.spc_observation || undefined,
       })));
     }
     setLoading(false);
@@ -306,9 +308,10 @@ const App: React.FC = () => {
     if (!session?.user) return;
     if (!confirm('Deseja mover este débito para SPC Sumidos?')) return;
 
+    const today = new Date().toISOString().split('T')[0];
     const { error } = await supabase
       .from('debts')
-      .update({ status: DebtStatus.SPC })
+      .update({ status: DebtStatus.SPC, spc_date: today })
       .eq('id', id);
 
     if (error) {
@@ -317,6 +320,19 @@ const App: React.FC = () => {
       fetchDebts();
     }
   }, [session, fetchDebts]);
+
+  const handleSaveObservation = useCallback(async (id: string, observation: string) => {
+    if (!session?.user) return;
+    const { error } = await supabase
+      .from('debts')
+      .update({ spc_observation: observation })
+      .eq('id', id);
+    if (error) {
+      alert('Erro ao salvar observação: ' + error.message);
+    } else {
+      setDebts(prev => prev.map(d => d.id === id ? { ...d, spcObservation: observation } : d));
+    }
+  }, [session]);
 
   const handleRemoveSpc = useCallback(async (id: string) => {
     if (!session?.user) return;
@@ -746,6 +762,7 @@ const App: React.FC = () => {
               onPayInterest={handlePayInterest}
               onWhatsApp={handleWhatsAppClick}
               onRemoveSpc={handleRemoveSpc}
+              onSaveObservation={handleSaveObservation}
               isSaving={isSaving}
             />
           )}

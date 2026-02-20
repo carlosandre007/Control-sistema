@@ -25,6 +25,8 @@ export interface Debt {
   avatarColor: string;
   category?: string;
   description?: string;
+  spcDate?: string;         // Data de entrada no SPC
+  spcObservation?: string;  // Observações adicionais do SPC
 }
 
 export interface Transaction {
