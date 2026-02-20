@@ -8,9 +8,10 @@ interface StatCardProps {
     footer?: string;
     secondaryValue?: string;
     color: 'danger' | 'warning' | 'primary' | 'success' | 'info';
+    action?: React.ReactNode;
 }
 
-const StatCard: React.FC<StatCardProps> = ({ title, value, icon, footer, secondaryValue, color }) => {
+const StatCard: React.FC<StatCardProps> = ({ title, value, icon, footer, secondaryValue, color, action }) => {
     const IconComponent = Icons[icon] as React.ElementType;
 
     const colorClasses = {
@@ -38,10 +39,11 @@ const StatCard: React.FC<StatCardProps> = ({ title, value, icon, footer, seconda
                 </div>
             </div>
             {footer && (
-                <div className="mt-4 pt-4 border-t border-slate-50 dark:border-slate-700/50">
+                <div className="mt-4 pt-4 border-t border-slate-50 dark:border-slate-700/50 flex items-center justify-between gap-4">
                     <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
                         {footer}
                     </p>
+                    {action}
                 </div>
             )}
         </div>

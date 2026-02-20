@@ -1,8 +1,6 @@
 import React from 'react';
 import StatCard from '../components/StatCard';
-import AlertCard from '../components/AlertCard';
 import DashboardChart from '../components/DashboardChart';
-import PaymentsTable from '../components/PaymentsTable';
 import UpcomingDebtsTable from '../components/UpcomingDebtsTable';
 import { DashboardStats, Debt, Transaction } from '../../types';
 import { Target, TrendingUp, Users, FileText, Info, Clock, Calendar, DollarSign, AlertTriangle, Download } from 'lucide-react';
@@ -80,6 +78,14 @@ const DashboardView: React.FC<DashboardViewProps> = ({
                     icon="AlertTriangle"
                     footer={`${stats.overdueCount} títulos em atraso`}
                     color="danger"
+                    action={overdueDebts > 0 && (
+                        <button
+                            onClick={onViewOverdue}
+                            className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-[10px] font-bold rounded-lg transition-colors shadow-sm flex items-center gap-1"
+                        >
+                            Ver Vencidos
+                        </button>
+                    )}
                 />
                 <StatCard
                     title="Total Quitadas"
@@ -140,76 +146,30 @@ const DashboardView: React.FC<DashboardViewProps> = ({
                 </div>
             </div>
 
-            {/* Alert Section */}
-            {overdueDebts > 0 && (
-                <AlertCard
-                    title="Cobranças em Atraso"
-                    description="Existem títulos vencidos que precisam de atenção imediata."
-                    count={overdueDebts}
-                    amount={stats.totalOverdue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                    buttonText="Ver Vencidos"
-                    onClick={onViewOverdue}
-                />
-            )}
 
-            {/* Export Section */}
-            <div className="flex justify-end">
-                <button
-                    onClick={() => exportDebtsToPDF(debts)}
-                    className="flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow-lg shadow-blue-500/20 transition-all transform active:scale-95"
-                >
-                    <Download size={18} />
-                    <span>Exportar Dívidas Ativas (PDF)</span>
-                </button>
-            </div>
 
-            {/* Main Content Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Main Content */}
+            <div className="grid grid-cols-1 gap-8">
                 <DashboardChart
                     data={chartData}
                     title="Linha do Tempo Anual"
-                />
-                <PaymentsTable
-                    transactions={annualTransactions}
-                />
+                >
+                    <button
+                        onClick={() => exportDebtsToPDF(debts)}
+                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition-all transform active:scale-95 shadow-sm"
+                    >
+                        <Download size={14} />
+                        <span>Exportar PDF</span>
+                    </button>
+                </DashboardChart>
             </div>
 
             {/* Lower Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 gap-8">
                 <UpcomingDebtsTable
                     debts={upcomingDebts}
                     onWhatsApp={onWhatsApp}
                 />
-
-                {/* Health Section */}
-                <div className="bg-white dark:bg-slate-800 rounded-3xl border border-slate-100 dark:border-slate-700 p-8 shadow-sm h-full">
-                    <div className="flex items-center gap-4 mb-6">
-                        <div className="w-12 h-12 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded-xl flex items-center justify-center">
-                            <TrendingUp size={24} strokeWidth={2.5} />
-                        </div>
-                        <div>
-                            <h3 className="text-lg font-bold text-slate-900 dark:text-white">Saúde Financeira</h3>
-                            <p className="text-xs text-slate-500 dark:text-slate-400">Dicas para melhorar sua performance</p>
-                        </div>
-                    </div>
-
-                    <div className="space-y-4">
-                        <div className="p-4 bg-slate-50 dark:bg-slate-900/50 rounded-2xl flex items-start gap-3">
-                            <Info size={16} className="text-indigo-500 mt-0.5" />
-                            <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed text-left">
-                                Sua taxa de recuperação está em <span className="font-bold text-indigo-600 dark:text-indigo-400">{stats.collectionEfficiency.toFixed(1)}%</span>.
-                                Considere enviar lembretes automáticos via WhatsApp para títulos que vencem nos próximos 3 dias.
-                            </p>
-                        </div>
-                        <div className="p-4 bg-slate-50 dark:bg-slate-900/50 rounded-2xl flex items-start gap-3 text-left">
-                            <Info size={16} className="text-emerald-500 mt-0.5" />
-                            <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-                                Você recebeu <span className="font-bold text-emerald-600">R$ {stats.receivedThisMonth.toLocaleString('pt-BR')}</span> este mês.
-                                Continue assim para bater sua meta anual de recebimentos!
-                            </p>
-                        </div>
-                    </div>
-                </div>
             </div>
         </div>
     );

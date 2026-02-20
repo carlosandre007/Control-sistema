@@ -54,24 +54,24 @@ const Header: React.FC<HeaderProps> = ({
                     <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-1">Status: Conectado • {new Date().toLocaleDateString('pt-BR')}</p>
                 </div>
 
-                <div className="flex items-center gap-2 bg-gray-100 dark:bg-slate-800 p-1 rounded-xl">
+                <div className="flex items-center gap-3 bg-slate-100 dark:bg-slate-800/80 p-1.5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
                     <select
                         value={selectedMonth}
                         onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
-                        className="bg-transparent border-none text-xs font-bold text-gray-600 dark:text-gray-300 focus:ring-0 cursor-pointer py-1.5 px-3"
+                        className="bg-transparent border-none text-xs font-black text-slate-900 dark:text-white focus:ring-0 cursor-pointer py-1.5 px-4 min-w-[120px] appearance-none"
                     >
                         {months.map((month, index) => (
-                            <option key={index} value={index} className="bg-white dark:bg-slate-800">{month}</option>
+                            <option key={index} value={index} className="bg-white dark:bg-slate-800 text-slate-900 dark:text-white">{month}</option>
                         ))}
                     </select>
-                    <div className="w-px h-4 bg-gray-300 dark:bg-slate-600"></div>
+                    <div className="w-px h-5 bg-slate-300 dark:bg-slate-600"></div>
                     <select
                         value={selectedYear}
                         onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-                        className="bg-transparent border-none text-xs font-bold text-gray-600 dark:text-gray-300 focus:ring-0 cursor-pointer py-1.5 px-3"
+                        className="bg-transparent border-none text-xs font-black text-slate-900 dark:text-white focus:ring-0 cursor-pointer py-1.5 px-4 min-w-[80px] appearance-none"
                     >
                         {years.map(year => (
-                            <option key={year} value={year} className="bg-white dark:bg-slate-800">{year}</option>
+                            <option key={year} value={year} className="bg-white dark:bg-slate-800 text-slate-900 dark:text-white">{year}</option>
                         ))}
                     </select>
                 </div>
