@@ -2,7 +2,8 @@ export enum DebtStatus {
   PENDING = 'PENDING',
   PAID = 'PAID',
   OVERDUE = 'OVERDUE',
-  UP_TO_DATE = 'UP_TO_DATE'
+  UP_TO_DATE = 'UP_TO_DATE',
+  SPC = 'SPC'
 }
 
 export interface Debt {

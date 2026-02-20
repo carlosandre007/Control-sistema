@@ -9,10 +9,11 @@ interface DebtItemRowProps {
     onPayInterest: (id: string) => void;
     onEdit: (debt: Debt) => void;
     onWhatsAppClick: (debt: Debt) => void;
+    onSpc?: (id: string) => void;
     isSaving?: boolean;
 }
 
-const DebtItemRow: React.FC<DebtItemRowProps> = ({ debt, onPay, onDelete, onPayInterest, onEdit, onWhatsAppClick, isSaving }) => {
+const DebtItemRow: React.FC<DebtItemRowProps> = ({ debt, onPay, onDelete, onPayInterest, onEdit, onWhatsAppClick, onSpc, isSaving }) => {
     const today = React.useMemo(() => {
         const d = new Date();
         d.setHours(0, 0, 0, 0);
@@ -124,6 +125,15 @@ const DebtItemRow: React.FC<DebtItemRowProps> = ({ debt, onPay, onDelete, onPayI
                         >
                             <span className="material-symbols-outlined text-xs">delete</span> Excluir
                         </button>
+                        {onSpc && (
+                            <button
+                                onClick={() => onSpc(debt.id)}
+                                disabled={isSaving}
+                                className="px-3 py-1.5 bg-purple-600 text-white text-[10px] font-bold rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-1 shadow-sm active:scale-95 disabled:opacity-50"
+                            >
+                                <span className="material-symbols-outlined text-xs">person_off</span> SPC
+                            </button>
+                        )}
                         {interest > 0 && (
                             <button
                                 onClick={() => onPayInterest(debt.id)}

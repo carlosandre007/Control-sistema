@@ -22,6 +22,7 @@ import { formatDateToISO } from './src/utils/date';
 import AuthView from './src/views/AuthView';
 import TransactionsView from './src/views/TransactionsView';
 import ActiveDebtsView from './src/views/ActiveDebtsView';
+import SpcDebtsView from './src/views/SpcDebtsView';
 import CustomerPanelView from './src/views/CustomerPanelView';
 import BackupView from './src/views/BackupView';
 import { Session } from '@supabase/supabase-js';
@@ -29,7 +30,7 @@ import { registerPayment } from './src/utils/finance';
 
 const App: React.FC = () => {
   const [session, setSession] = useState<Session | null>(null);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'alerts' | 'clients' | 'transactions' | 'active_debts' | 'backup'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'alerts' | 'clients' | 'transactions' | 'active_debts' | 'spc_debts' | 'backup'>('dashboard');
   const [debts, setDebts] = useState<Debt[]>([]);
   const [loading, setLoading] = useState(true);
   const [annualTransactions, setAnnualTransactions] = useState<Transaction[]>([]); // For timeline chart
@@ -135,7 +136,7 @@ const App: React.FC = () => {
     const monthPrefix = `${selectedYear}-${(selectedMonth + 1).toString().padStart(2, '0')}`;
 
     const monthDebts = debts.filter(d => d.dueDate && d.dueDate.startsWith(monthPrefix));
-    const activeMonthDebts = monthDebts.filter(d => d.status !== DebtStatus.PAID);
+    const activeMonthDebts = monthDebts.filter(d => d.status !== DebtStatus.PAID && d.status !== DebtStatus.SPC);
 
     const totalReceived = annualTransactions
       .filter(t => t.transactionDate && t.transactionDate.startsWith(monthPrefix))
@@ -147,6 +148,7 @@ const App: React.FC = () => {
     const todayStr = new Date().toISOString().split('T')[0];
     const overdueDebtsList = debts.filter(d =>
       d.status !== DebtStatus.PAID &&
+      d.status !== DebtStatus.SPC &&
       d.dueDate && d.dueDate < todayStr
     );
 
@@ -175,7 +177,7 @@ const App: React.FC = () => {
       totalPortfolio,
       totalClients,
       collectionEfficiency,
-      activeCount: debts.filter(d => d.status !== DebtStatus.PAID).length,
+      activeCount: debts.filter(d => d.status !== DebtStatus.PAID && d.status !== DebtStatus.SPC).length,
       interestReceived // Pass this new field
     };
   }, [debts, annualTransactions, selectedMonth, selectedYear]);
@@ -299,6 +301,38 @@ const App: React.FC = () => {
       }
     }
   }, [fetchDebts, debts, selectedCustomerCode]);
+
+  const handleSpc = useCallback(async (id: string) => {
+    if (!session?.user) return;
+    if (!confirm('Deseja mover este débito para SPC Sumidos?')) return;
+
+    const { error } = await supabase
+      .from('debts')
+      .update({ status: DebtStatus.SPC })
+      .eq('id', id);
+
+    if (error) {
+      alert('Erro ao mover para SPC: ' + error.message);
+    } else {
+      fetchDebts();
+    }
+  }, [session, fetchDebts]);
+
+  const handleRemoveSpc = useCallback(async (id: string) => {
+    if (!session?.user) return;
+    if (!confirm('Deseja remover este débito do SPC e restaurar para Débitos Vigentes?')) return;
+
+    const { error } = await supabase
+      .from('debts')
+      .update({ status: DebtStatus.PENDING })
+      .eq('id', id);
+
+    if (error) {
+      alert('Erro ao remover do SPC: ' + error.message);
+    } else {
+      fetchDebts();
+    }
+  }, [session, fetchDebts]);
 
   const handlePayInterest = useCallback(async (id: string) => {
     if (!session?.user || isSaving) return;
@@ -694,10 +728,24 @@ const App: React.FC = () => {
               onDelete={handleDelete}
               onPayInterest={handlePayInterest}
               onWhatsApp={handleWhatsAppClick}
+              onSpc={handleSpc}
               selectedCustomerCode={selectedCustomerCode}
               setSelectedCustomerCode={setSelectedCustomerCode}
               selectedMonth={selectedMonth}
               selectedYear={selectedYear}
+              isSaving={isSaving}
+            />
+          )}
+
+          {activeTab === 'spc_debts' && (
+            <SpcDebtsView
+              debts={debts}
+              onPay={handlePay}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+              onPayInterest={handlePayInterest}
+              onWhatsApp={handleWhatsAppClick}
+              onRemoveSpc={handleRemoveSpc}
               isSaving={isSaving}
             />
           )}

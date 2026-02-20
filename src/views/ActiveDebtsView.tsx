@@ -11,6 +11,7 @@ interface ActiveDebtsViewProps {
     onDelete: (id: string) => void;
     onPayInterest: (id: string) => void;
     onWhatsApp: (debt: Debt) => void;
+    onSpc: (id: string) => void;
     selectedCustomerCode: string | null;
     setSelectedCustomerCode: (code: string | null) => void;
     selectedMonth: number;
@@ -25,6 +26,7 @@ const ActiveDebtsView: React.FC<ActiveDebtsViewProps> = ({
     onDelete,
     onPayInterest,
     onWhatsApp,
+    onSpc,
     selectedCustomerCode,
     setSelectedCustomerCode,
     selectedMonth,
@@ -35,7 +37,7 @@ const ActiveDebtsView: React.FC<ActiveDebtsViewProps> = ({
 
     // 1. Filter ACTIVE debts (PENDING, UP_TO_DATE, OVERDUE)
     const activeDebts = debts.filter(d => {
-        if (d.status === DebtStatus.PAID) return false;
+        if (d.status === DebtStatus.PAID || d.status === DebtStatus.SPC) return false;
 
         return d.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
             (d.description && d.description.toLowerCase().includes(searchTerm.toLowerCase()));
@@ -43,7 +45,7 @@ const ActiveDebtsView: React.FC<ActiveDebtsViewProps> = ({
 
     // 2. Filter PAID debts
     const paidDebts = debts.filter(d => {
-        if (d.status !== DebtStatus.PAID) return false;
+        if (d.status !== DebtStatus.PAID || d.status === DebtStatus.SPC) return false;
         return d.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
             (d.description && d.description.toLowerCase().includes(searchTerm.toLowerCase()));
     });
@@ -114,6 +116,7 @@ const ActiveDebtsView: React.FC<ActiveDebtsViewProps> = ({
                             onDelete={onDelete}
                             onPayInterest={onPayInterest}
                             onWhatsAppClick={onWhatsApp}
+                            onSpc={onSpc}
                             isSaving={isSaving}
                         />
                     ))

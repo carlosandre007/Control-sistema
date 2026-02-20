@@ -2,8 +2,8 @@ import React from 'react';
 import SidebarItem from '../components/SidebarItem';
 
 interface SidebarProps {
-    activeTab: 'dashboard' | 'alerts' | 'clients' | 'transactions' | 'active_debts' | 'backup';
-    setActiveTab: (tab: 'dashboard' | 'alerts' | 'clients' | 'transactions' | 'active_debts' | 'backup') => void;
+    activeTab: 'dashboard' | 'alerts' | 'clients' | 'transactions' | 'active_debts' | 'spc_debts' | 'backup';
+    setActiveTab: (tab: 'dashboard' | 'alerts' | 'clients' | 'transactions' | 'active_debts' | 'spc_debts' | 'backup') => void;
     overdueCount: number;
     onLogout?: () => void;
 }
@@ -52,6 +52,12 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, overdueCount
                     label="Débitos Vigentes"
                     active={activeTab === 'active_debts' as any}
                     onClick={() => setActiveTab('active_debts' as any)}
+                />
+                <SidebarItem
+                    icon="person_off"
+                    label="SPC Sumidos"
+                    active={activeTab === 'spc_debts' as any}
+                    onClick={() => setActiveTab('spc_debts' as any)}
                 />
                 <SidebarItem
                     icon="backup"

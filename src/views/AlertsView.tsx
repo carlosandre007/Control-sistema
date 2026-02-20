@@ -47,7 +47,7 @@ const AlertsView: React.FC<AlertsViewProps> = ({
 
         (Object.entries(groupedDebts) as [string, Debt[]][]).forEach(([code, debts]) => {
             const overdueDebts = debts.filter(d => {
-                if (d.status === DebtStatus.PAID) return false;
+                if (d.status === DebtStatus.PAID || d.status === DebtStatus.SPC) return false;
                 return isOverdue(d.dueDate);
             });
 

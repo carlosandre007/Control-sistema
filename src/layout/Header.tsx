@@ -38,6 +38,7 @@ const Header: React.FC<HeaderProps> = ({
             case 'alerts': return 'Central de Ação Rápida';
             case 'clients': return 'Importação e Clientes';
             case 'active_debts': return 'Débitos Vigentes';
+            case 'spc_debts': return 'SPC Sumidos';
             case 'transactions': return 'Fluxo de Caixa';
             default: return 'Financeiro Pro';
         }
