@@ -26,6 +26,7 @@ interface CustomerPanelViewProps {
     onEdit: (debt: Debt) => void;
     onPayInterest: (id: string) => void;
     onWhatsApp: (debt: Debt) => void;
+    onSpc?: (id: string) => void;
 }
 
 const CustomerPanelView: React.FC<CustomerPanelViewProps> = ({
@@ -36,12 +37,24 @@ const CustomerPanelView: React.FC<CustomerPanelViewProps> = ({
     onPay,
     onEdit,
     onPayInterest,
-    onWhatsApp
+    onWhatsApp,
+    onSpc
 }) => {
     const [activeTab, setActiveTab] = useState<'payments' | 'interest' | 'report'>('payments');
 
     const customerDebts = useMemo(() => debts.filter(d => d.customerCode === customerCode), [debts, customerCode]);
-    const customerTransactions = useMemo(() => transactions.filter(t => t.chargeId && customerDebts.some(d => d.id === t.chargeId)), [transactions, customerDebts]);
+
+    // Improved filtering: Use chargeId if available, fallback to customerName for older/manual transactions
+    const customerTransactions = useMemo(() => {
+        const name = customerDebts[0]?.customerName;
+        return transactions.filter(t => {
+            if (t.chargeId) {
+                return customerDebts.some(d => d.id === t.chargeId);
+            }
+            // Fallback for transactions without chargeId
+            return name && t.customerName === name;
+        });
+    }, [transactions, customerDebts]);
 
     const name = customerDebts[0]?.customerName || 'Cliente';
     const document = customerDebts[0]?.customerDocument || 'Não informado';
@@ -193,6 +206,15 @@ const CustomerPanelView: React.FC<CustomerPanelViewProps> = ({
                                                             >
                                                                 Total
                                                             </button>
+                                                            {onSpc && (
+                                                                <button
+                                                                    onClick={() => onSpc(debt.id)}
+                                                                    className="px-2 py-1 bg-purple-100 text-purple-600 rounded hover:bg-purple-600 hover:text-white transition-colors"
+                                                                    title="SPC"
+                                                                >
+                                                                    SPC
+                                                                </button>
+                                                            )}
                                                         </div>
                                                     </td>
                                                 </tr>

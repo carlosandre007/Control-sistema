@@ -195,7 +195,7 @@ const App: React.FC = () => {
 
     const { data, error } = await supabase
       .from('transactions')
-      .select('id, amount, type, transaction_date, customer_name, category')
+      .select('id, amount, type, transaction_date, customer_name, category, charge_id')
       .eq('user_id', session.user.id)
       .gte('transaction_date', startOfYear)
       .lte('transaction_date', endOfYear)
@@ -212,7 +212,8 @@ const App: React.FC = () => {
       type: t.type,
       transactionDate: t.transaction_date || '',
       customerName: t.customer_name || 'Desconhecido',
-      category: t.category || 'Geral'
+      category: t.category || 'Geral',
+      chargeId: t.charge_id
     }));
 
     setAnnualTransactions(transactions);
@@ -242,8 +243,6 @@ const App: React.FC = () => {
     const debt = debts.find(d => d.id === id);
     if (!debt) return;
 
-    setIsSaving(true);
-
     const interest = calculateInterest(debt);
     const totalAmount = debt.amount + interest;
 
@@ -266,6 +265,7 @@ const App: React.FC = () => {
       return;
     }
 
+    setIsSaving(true);
     try {
       // Always register as TOTAL payment when Total button is clicked
       await registerPayment(debt, 'total', paidAmount, session.user.id);
@@ -783,6 +783,7 @@ const App: React.FC = () => {
               selectedMonth={selectedMonth}
               selectedYear={selectedYear}
               isSaving={isSaving}
+              onSpc={handleSpc}
             />
           )}
 
@@ -848,6 +849,7 @@ const App: React.FC = () => {
           onEdit={handleEdit}
           onPayInterest={handlePayInterest}
           onWhatsApp={handleWhatsAppClick}
+          onSpc={handleSpc}
         />
       )}
       <SpeedInsights />

@@ -19,6 +19,7 @@ interface AlertsViewProps {
     selectedMonth: number;
     selectedYear: number;
     isSaving?: boolean;
+    onSpc?: (id: string) => void;
 }
 
 const AlertsView: React.FC<AlertsViewProps> = ({
@@ -35,7 +36,8 @@ const AlertsView: React.FC<AlertsViewProps> = ({
     onWhatsAppClick,
     selectedMonth,
     selectedYear,
-    isSaving
+    isSaving,
+    onSpc
 }) => {
     // Filter to show only overdue debts: unpaid debts with dueDate <= today
     // AND respect the selected month/year
@@ -144,7 +146,7 @@ const AlertsView: React.FC<AlertsViewProps> = ({
                             </div>
                             <div className="space-y-3 max-h-[500px] overflow-y-auto scrollbar-hide pr-1">
                                 {selectedCustomerDebts.map(debt => (
-                                    <DebtItemRow key={debt.id} debt={debt} onPay={handlePay} onDelete={handleDelete} onPayInterest={handlePayInterest} onEdit={onEdit} onWhatsAppClick={onWhatsAppClick} isSaving={isSaving} />
+                                    <DebtItemRow key={debt.id} debt={debt} onPay={handlePay} onDelete={handleDelete} onPayInterest={handlePayInterest} onEdit={onEdit} onWhatsAppClick={onWhatsAppClick} onSpc={onSpc} isSaving={isSaving} />
                                 ))}
                             </div>
                             <div className="pt-4 border-t border-gray-100 dark:border-slate-700 flex gap-2">
