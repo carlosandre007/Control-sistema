@@ -138,18 +138,18 @@ export const parseExcelForImport = async (file: File, currentDebts: Debt[]): Pro
 
         const previewData: ImportPreviewRow[] = json.map((row, idx) => {
           const errors: string[] = [];
-          
+
           const id = row['ID'] || row['id'];
           if (!id) errors.push('ID ausente.');
 
           const existingDebt = currentDebts.find(d => d.id === id);
           if (id && !existingDebt) errors.push('Débito não encontrado no sistema.');
-          
+
           const newName = String(row['Nome do Cliente'] || row['customerName'] || '').trim();
           const newWhatsapp = String(row['WhatsApp'] || row['whatsapp'] || '').trim();
           const rawAmount = row['Valor Principal (R$)'] || row['amount'];
           const newAmount = typeof rawAmount === 'number' ? rawAmount : parseFloat(String(rawAmount).replace(/[R$\s]/g, '').replace(',', '.'));
-          
+
           const rawDueDate = row['Data de Vencimento'] || row['dueDate'];
           const newDueDate = parseExcelDate(rawDueDate);
 
@@ -169,9 +169,9 @@ export const parseExcelForImport = async (file: File, currentDebts: Debt[]): Pro
             };
 
             if (newName !== oldData.customerName ||
-                newAmount !== oldData.amount ||
-                newDueDate !== oldData.dueDate ||
-                newWhatsapp !== oldData.whatsapp) {
+              newAmount !== oldData.amount ||
+              newDueDate !== oldData.dueDate ||
+              newWhatsapp !== oldData.whatsapp) {
               hasChanges = true;
             }
           }
@@ -198,3 +198,4 @@ export const parseExcelForImport = async (file: File, currentDebts: Debt[]): Pro
     reader.readAsBinaryString(file);
   });
 };
+o
