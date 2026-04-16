@@ -1,8 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import { Debt, DebtStatus } from '../../types';
-import { Search, Filter, Calendar, Plus } from 'lucide-react';
+import { Search, Filter, Calendar, Plus, FileSpreadsheet, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import DebtItemRow from '../components/DebtItemRow';
-import { isOverdue } from '../utils/status';
+import ImportExportModal from '../components/ImportExportModal';
 
 interface ActiveDebtsViewProps {
     debts: Debt[];
@@ -17,6 +17,8 @@ interface ActiveDebtsViewProps {
     selectedMonth: number;
     selectedYear: number;
     isSaving?: boolean;
+    userId: string;
+    onRefresh: () => void;
 }
 
 const ActiveDebtsView: React.FC<ActiveDebtsViewProps> = ({
@@ -31,12 +33,17 @@ const ActiveDebtsView: React.FC<ActiveDebtsViewProps> = ({
     setSelectedCustomerCode,
     selectedMonth,
     selectedYear,
-    isSaving
+    isSaving,
+    userId,
+    onRefresh
 }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
+    const [dueDay, setDueDay] = useState('');
     const [showOnlyNew, setShowOnlyNew] = useState(false);
+    const [isImportExportOpen, setIsImportExportOpen] = useState(false);
+    const [daySortOrder, setDaySortOrder] = useState<'none' | 'asc' | 'desc'>('none');
 
     const filterByDate = (date: string) => {
         if (!startDate && !endDate) return true;
@@ -65,12 +72,23 @@ const ActiveDebtsView: React.FC<ActiveDebtsViewProps> = ({
                     d.registrationDate && d.registrationDate.startsWith(currentMonthStr)
                 );
 
+                const matchesDueDay = !dueDay || (
+                    d.dueDate === `${currentMonthStr}-${dueDay.padStart(2, '0')}`
+                );
+
                 const matchesCustomer = !selectedCustomerCode || d.customerCode === selectedCustomerCode;
 
-                return matchesSearch && matchesDate && matchesRegistrationMonth && matchesCustomer;
+                return matchesSearch && matchesDate && matchesRegistrationMonth && matchesDueDay && matchesCustomer;
             })
-            .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
-    }, [debts, searchTerm, startDate, endDate, showOnlyNew, selectedCustomerCode, currentMonthStr]);
+            .sort((a, b) => {
+                if (daySortOrder !== 'none') {
+                    const dayA = parseInt(a.dueDate?.split('-')[2] || '0');
+                    const dayB = parseInt(b.dueDate?.split('-')[2] || '0');
+                    return daySortOrder === 'asc' ? dayA - dayB : dayB - dayA;
+                }
+                return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+            });
+    }, [debts, searchTerm, startDate, endDate, showOnlyNew, dueDay, daySortOrder, selectedCustomerCode, currentMonthStr]);
 
     // 2. Filter and Sort PAID debts
     const paidDebts = useMemo(() => {
@@ -87,12 +105,23 @@ const ActiveDebtsView: React.FC<ActiveDebtsViewProps> = ({
                     d.registrationDate && d.registrationDate.startsWith(currentMonthStr)
                 );
 
+                const matchesDueDay = !dueDay || (
+                    d.dueDate === `${currentMonthStr}-${dueDay.padStart(2, '0')}`
+                );
+
                 const matchesCustomer = !selectedCustomerCode || d.customerCode === selectedCustomerCode;
 
-                return matchesSearch && matchesDate && matchesRegistrationMonth && matchesCustomer;
+                return matchesSearch && matchesDate && matchesRegistrationMonth && matchesDueDay && matchesCustomer;
             })
-            .sort((a, b) => new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime()); // Newest paid first
-    }, [debts, searchTerm, startDate, endDate, showOnlyNew, selectedCustomerCode, currentMonthStr]);
+            .sort((a, b) => {
+                if (daySortOrder !== 'none') {
+                    const dayA = parseInt(a.dueDate?.split('-')[2] || '0');
+                    const dayB = parseInt(b.dueDate?.split('-')[2] || '0');
+                    return daySortOrder === 'asc' ? dayA - dayB : dayB - dayA;
+                }
+                return new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime();
+            });
+    }, [debts, searchTerm, startDate, endDate, showOnlyNew, dueDay, daySortOrder, selectedCustomerCode, currentMonthStr]);
 
     return (
         <div className="space-y-6 animate-in fade-in duration-500">
@@ -110,17 +139,28 @@ const ActiveDebtsView: React.FC<ActiveDebtsViewProps> = ({
                         </p>
                     </div>
                 </div>
-                <div className="flex items-center gap-3 bg-gray-50 dark:bg-slate-900/50 p-2 rounded-2xl border border-gray-100 dark:border-slate-700">
-                    <div className="px-4 py-2 text-center">
-                        <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Total Geral em Aberto</div>
-                        <div className="text-lg font-black text-gray-900 dark:text-white">
-                            R$ {activeDebts.reduce((sum, d) => sum + d.amount, 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                <div className="flex items-center gap-4">
+                    <button
+                        onClick={() => setIsImportExportOpen(true)}
+                        className="flex items-center gap-3 px-6 py-4 bg-white dark:bg-slate-900 text-gray-700 dark:text-gray-300 font-bold rounded-2xl border border-gray-100 dark:border-slate-700 hover:border-primary/50 hover:text-primary transition-all shadow-sm"
+                    >
+                        <FileSpreadsheet className="w-5 h-5" />
+                        <span>Planilha Excel</span>
+                    </button>
+                    
+                    <div className="flex items-center gap-3 bg-gray-50 dark:bg-slate-900/50 p-2 rounded-2xl border border-gray-100 dark:border-slate-700">
+                        <div className="px-4 py-2 text-center">
+                            <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Total Geral em Aberto</div>
+                            <div className="text-lg font-black text-gray-900 dark:text-white">
+                                R$ {activeDebts.reduce((sum, d) => sum + d.amount, 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
 
             {/* Filters */}
+            {/* ... rest of the component remains same ... */}
             <div className="flex flex-col xl:flex-row gap-4 items-center justify-between bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm p-4 rounded-2xl border border-white/20 mb-8">
                 <div className="relative flex-1 w-full max-w-xl group">
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-primary transition-colors" />
@@ -145,6 +185,42 @@ const ActiveDebtsView: React.FC<ActiveDebtsViewProps> = ({
                         Novos do Mês
                     </button>
 
+                    <div className="flex items-center gap-2 bg-white dark:bg-slate-900 px-3 py-1.5 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm flex-1 md:flex-none">
+                        <span className="text-xs font-bold text-gray-500 whitespace-nowrap">Dia Vencimento:</span>
+                        <style>{`
+                            .due-day-input::-webkit-inner-spin-button,
+                            .due-day-input::-webkit-outer-spin-button {
+                                opacity: 1;
+                                transform: scale(2);
+                                cursor: pointer;
+                                margin-right: 4px;
+                            }
+                        `}</style>
+                        <input
+                            type="number"
+                            min="1"
+                            max="31"
+                            placeholder="--"
+                            className="due-day-input bg-transparent border-none text-sm font-black text-gray-900 dark:text-white focus:ring-0 p-0 outline-none w-12 text-center"
+                            value={dueDay}
+                            onChange={(e) => {
+                                const val = e.target.value;
+                                if (val === '' || (parseInt(val) >= 1 && parseInt(val) <= 31)) {
+                                    setDueDay(val);
+                                }
+                            }}
+                        />
+                        {dueDay && (
+                            <button
+                                onClick={() => setDueDay('')}
+                                className="w-5 h-5 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-full transition-colors shrink-0"
+                                title="Limpar filtro de dia"
+                            >
+                                <span className="text-xs font-bold">✕</span>
+                            </button>
+                        )}
+                    </div>
+
                     <div className="flex items-center gap-2 bg-white dark:bg-slate-900 p-1 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm flex-1 md:flex-none">
                         <div className="pl-3 text-gray-400">
                             <Calendar className="w-4 h-4" />
@@ -166,12 +242,13 @@ const ActiveDebtsView: React.FC<ActiveDebtsViewProps> = ({
                         />
                     </div>
 
-                    {(startDate || endDate || showOnlyNew || selectedCustomerCode) && (
+                    {(startDate || endDate || showOnlyNew || selectedCustomerCode || dueDay) && (
                         <button
                             onClick={() => {
                                 setStartDate('');
                                 setEndDate('');
                                 setShowOnlyNew(false);
+                                setDueDay('');
                                 setSelectedCustomerCode(null);
                             }}
                             className="p-2 text-gray-400 hover:text-danger hover:bg-danger/5 rounded-xl transition-all"
@@ -190,7 +267,27 @@ const ActiveDebtsView: React.FC<ActiveDebtsViewProps> = ({
 
             {/* Active Debts List */}
             <div className="space-y-3">
-                <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-2">Dívidas em Aberto</h3>
+                <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider">Dívidas em Aberto</h3>
+                    <button
+                        onClick={() => setDaySortOrder(prev => prev === 'none' ? 'asc' : prev === 'asc' ? 'desc' : 'none')}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all border ${
+                            daySortOrder !== 'none'
+                                ? 'bg-primary/10 text-primary border-primary/30 shadow-sm'
+                                : 'text-gray-400 border-gray-200 dark:border-slate-700 hover:border-primary/40 hover:text-primary bg-white dark:bg-slate-900'
+                        }`}
+                        title={daySortOrder === 'none' ? 'Ordenar por dia' : daySortOrder === 'asc' ? 'Ordem crescente (clique para decrescente)' : 'Ordem decrescente (clique para desativar)'}
+                    >
+                        {daySortOrder === 'asc' ? (
+                            <ArrowUp className="w-3.5 h-3.5" />
+                        ) : daySortOrder === 'desc' ? (
+                            <ArrowDown className="w-3.5 h-3.5" />
+                        ) : (
+                            <ArrowUpDown className="w-3.5 h-3.5" />
+                        )}
+                        Dia
+                    </button>
+                </div>
                 {activeDebts.length === 0 ? (
                     <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-2xl border border-dashed border-gray-200 dark:border-gray-700">
                         <p className="text-gray-500">Nenhum débito vigente encontrado.</p>
@@ -230,8 +327,17 @@ const ActiveDebtsView: React.FC<ActiveDebtsViewProps> = ({
                     ))}
                 </div>
             )}
+
+            <ImportExportModal 
+                isOpen={isImportExportOpen}
+                onClose={() => setIsImportExportOpen(false)}
+                currentDebts={debts}
+                userId={userId}
+                onRefresh={onRefresh}
+            />
         </div>
     );
 };
 
 export default ActiveDebtsView;
+

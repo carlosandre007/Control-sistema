@@ -750,6 +750,8 @@ const App: React.FC = () => {
               selectedMonth={selectedMonth}
               selectedYear={selectedYear}
               isSaving={isSaving}
+              userId={session!.user.id}
+              onRefresh={fetchDebts}
             />
           )}
 
