@@ -1,22 +1,45 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# Cobrança — ERP Financeiro
 
-# Run and deploy your AI Studio app
+> Sistema de gestão financeira profissional para cobranças, dívidas, fluxo de caixa e controle pessoal.
 
-This contains everything you need to run your app locally.
+## 🔗 Links
 
-View your app in AI Studio: https://ai.studio/apps/drive/1yTamVaeSQSWlcrOmfG7NS1VLOm1gsTm8
+- **Repositório GitHub:** https://github.com/carlosandre007/Control-sistema
+- **Deploy (Vercel):** https://control-sistema.vercel.app/
 
-Vercel URL: https://gerenciador-de-dividas-pro.vercel.app/
+## 🚀 Executar Localmente
 
-## Run Locally
+**Pré-requisitos:** Node.js 18+
 
-**Prerequisites:**  Node.js
+```bash
+# 1. Instalar dependências
+npm install
 
+# 2. Configurar variáveis de ambiente
+cp .env.example .env.local
+# Edite .env.local com suas chaves do Supabase
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+# 3. Rodar em desenvolvimento
+npm run dev
+```
+
+## 🏗️ Build para Produção
+
+```bash
+npm run build
+```
+
+## ⚙️ Variáveis de Ambiente
+
+| Variável | Descrição |
+|---|---|
+| `VITE_SUPABASE_URL` | URL do projeto Supabase |
+| `VITE_SUPABASE_ANON_KEY` | Chave anônima do Supabase |
+
+## 📦 Tech Stack
+
+- **Frontend:** React 19 + TypeScript + Vite
+- **Estilo:** Tailwind CSS
+- **Banco de dados:** Supabase (PostgreSQL)
+- **Deploy:** Vercel
+- **PWA:** vite-plugin-pwa (Workbox)
