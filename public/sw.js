@@ -1,22 +1,10 @@
-const CACHE_NAME = 'dividas-pro-v1';
-const ASSETS_TO_CACHE = [
-    '/',
-    '/index.html',
-    '/manifest.json'
-];
-
-self.addEventListener('install', (event) => {
-    event.waitUntil(
-        caches.open(CACHE_NAME).then((cache) => {
-            return cache.addAll(ASSETS_TO_CACHE);
-        })
-    );
-});
-
-self.addEventListener('fetch', (event) => {
-    event.respondWith(
-        caches.match(event.request).then((response) => {
-            return response || fetch(event.request);
-        })
-    );
+// Este arquivo foi intencionalmente esvaziado.
+// O Service Worker é gerenciado pelo vite-plugin-pwa (Workbox).
+// Este SW se auto-desregistra para evitar conflito com o SW gerado pelo Workbox.
+self.addEventListener('install', () => self.skipWaiting());
+self.addEventListener('activate', async () => {
+  await self.clients.claim();
+  // Limpa todos os caches antigos desta versão manual
+  const keys = await caches.keys();
+  await Promise.all(keys.map(key => caches.delete(key)));
 });
