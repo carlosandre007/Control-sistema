@@ -43,3 +43,6 @@ npm run build
 - **Banco de dados:** Supabase (PostgreSQL)
 - **Deploy:** Vercel
 - **PWA:** vite-plugin-pwa (Workbox)
+
+<!-- test commit deploy Vercel -->
+
